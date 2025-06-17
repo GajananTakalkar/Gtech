@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}PLC Quiz - GTech Automation{% endblock %}
+
+{% block content %}
+  <h2>PLC Multiple Choice Quiz</h2>
+  <form method="POST" action="/plc-quiz/submit">
+    {% for q in questions %}
+      <p><strong>{{ loop.index }}. {{ q.question }}</strong></p>
+      {% for opt in q.options %}
+        <label><input type="radio" name="q{{ loop.index0 }}" value="{{ opt }}"> {{ opt }}</label><br>
+      {% endfor %}
+      <br>
+    {% endfor %}
+    <button type="submit">Submit Quiz</button>
+  </form>
+{% endblock %}

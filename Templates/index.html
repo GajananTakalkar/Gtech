@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Available Courses{% endblock %}
+{% block content %}
+<h2 class="mb-3">Available Training Courses</h2>
+<ul class="list-group">
+  {% for course in courses %}
+    <li class="list-group-item">{{ course }}</li>
+  {% endfor %}
+</ul>
+<a href="/register" class="btn btn-success mt-3">Register Now</a>
+{% endblock %}
