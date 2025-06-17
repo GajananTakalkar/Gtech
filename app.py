@@ -3,7 +3,7 @@ import pandas as pd
 import os
 
 app = Flask(__name__)
-EXCEL_FILE = "/storage/emulated/0/vidmate/site/registration_data.xlsx"
+EXCEL_FILE = "/registration_data.xlsx"
 
 @app.route('/')
 def home():
