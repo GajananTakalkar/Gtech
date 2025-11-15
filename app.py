@@ -1,38 +1,55 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, send_file
 import pandas as pd
 import os
 
 app = Flask(__name__)
+
+# Excel file stored in /tmp because Render only allows writing there
 EXCEL_FILE = "registration_data.xlsx"
+
+
+def ensure_excel_exists():
+    """Create Excel file with headers if not found."""
+    if not os.path.exists(EXCEL_FILE):
+        df = pd.DataFrame(columns=["Name", "Email", "Course"])
+        df.to_excel(EXCEL_FILE, index=False)
 
 
 @app.route('/')
 def home():
     return render_template("home.html")
 
+
 @app.route('/about')
 def about():
     return render_template("about.html")
-    
+
+
 @app.route('/plc_scada')
 def plc_scada():
     return render_template('plc_scada.html')
-    
+
+
 @app.route('/hmi_vfd')
 def hmi_vfd():
     return render_template('hmi_vfd.html')
+
 
 @app.route('/training')
 def training():
     return render_template('training.html')
 
+
 @app.route('/course')
 def course():
-    return render_template('course.html')   
+    return render_template('course.html')
+
 
 @app.route('/register', methods=["GET", "POST"])
 def register():
-    courses = ["PLC Basics", "SCADA", "HMI", "python", ]  # or load dynamically
+    ensure_excel_exists()
+
+    courses = ["PLC Basics", "SCADA", "HMI", "python"]
 
     if request.method == "POST":
         name = request.form["name"]
@@ -45,21 +62,22 @@ def register():
             "Course": course
         }
 
-        # Save to Excel (create or append)
-        if os.path.exists(EXCEL_FILE):
-            df = pd.read_excel(EXCEL_FILE)
-            df = pd.concat([df, pd.DataFrame([new_data])], ignore_index=True)
-        else:
-            df = pd.DataFrame([new_data])
+        # Read file
+        df = pd.read_excel(EXCEL_FILE)
 
+        # Append new row
+        df = pd.concat([df, pd.DataFrame([new_data])], ignore_index=True)
+
+        # Save back to file
         df.to_excel(EXCEL_FILE, index=False)
 
         return f"<h2>Thank you, {name}! Your registration for {course} is saved.</h2>"
 
     return render_template("register.html", courses=courses)
 
+
 # ==========================
-# ✅ PLC QUIZ INTEGRATION ✅
+# PLC QUIZ
 # ==========================
 
 quiz_questions = [
@@ -90,9 +108,11 @@ quiz_questions = [
     }
 ]
 
+
 @app.route('/plc-quiz')
 def plc_quiz():
     return render_template('quiz.html', questions=quiz_questions)
+
 
 @app.route('/plc-quiz/submit', methods=['POST'])
 def plc_submit():
@@ -102,6 +122,7 @@ def plc_submit():
         if user_answer == q['answer']:
             score += 1
     return render_template('result.html', score=score, total=len(quiz_questions))
+
 
 # ==========================
 
