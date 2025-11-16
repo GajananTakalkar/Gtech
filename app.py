@@ -15,7 +15,7 @@ else:
 
 os.makedirs(DATA_FOLDER, exist_ok=True)
 
-CSV_FILE = os.path.join(DATA_FOLDER, "registration_data.csv")
+CSV_FILE = os.path.join(DATA_FOLDER, "reg.csv")
 
 
 # ==========================
