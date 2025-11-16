@@ -5,9 +5,10 @@ import os
 app = Flask(__name__)
 
 # ============================================
-# STORAGE (WORKS LOCALLY AND ON RENDER HOSTING)
+# STORAGE (LOCAL + RENDER FRIENDLY)
 # ============================================
 
+# Render gives write-access only to /tmp
 if os.environ.get("RENDER"):
     DATA_FOLDER = "/tmp/data"
 else:
@@ -15,24 +16,23 @@ else:
 
 os.makedirs(DATA_FOLDER, exist_ok=True)
 
-# FIXED: Correct file name
 CSV_FILE = os.path.join(DATA_FOLDER, "reg.csv")
 
 
 # ============================================
-# CSV SAFE FUNCTIONS
+# CSV HELPERS
 # ============================================
 
 def ensure_csv_exists():
-    """Create CSV with correct columns if missing."""
+    """Create CSV with header if not found."""
     if not os.path.exists(CSV_FILE):
         df = pd.DataFrame(columns=["Name", "Email", "Course"])
         df.to_csv(CSV_FILE, index=False)
-        print("CSV CREATED:", CSV_FILE)
+        print("CSV CREATED AT:", CSV_FILE)
 
 
 def read_csv_safe():
-    """Safely read CSV; if corrupted, return empty."""
+    """Read CSV safely and return empty structure if corrupted."""
     try:
         return pd.read_csv(CSV_FILE)
     except:
@@ -40,14 +40,15 @@ def read_csv_safe():
 
 
 def save_csv(df):
-    """Safely save CSV."""
+    """Safe write CSV."""
     try:
         df.to_csv(CSV_FILE, index=False)
+        print("CSV UPDATED:", CSV_FILE)
     except Exception as e:
-        print("CSV Write Error:", e)
+        print("CSV WRITE ERROR:", e)
 
 
-# Create CSV when app starts
+# Create CSV on server start
 ensure_csv_exists()
 
 
@@ -94,9 +95,9 @@ def register():
     courses = ["PLC Basics", "SCADA", "HMI", "Python"]
 
     if request.method == "POST":
-        name = request.form["name"]
-        email = request.form["email"]
-        course = request.form["course"]
+        name = request.form.get("name")
+        email = request.form.get("email")
+        course = request.form.get("course")
 
         df_old = read_csv_safe()
 
