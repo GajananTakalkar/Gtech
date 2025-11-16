@@ -15,7 +15,8 @@ else:
 
 os.makedirs(DATA_FOLDER, exist_ok=True)
 
-CSV_FILE = os.path.join(DATA_FOLDER, "reg_data.csv")
+# FIXED: Correct file name
+CSV_FILE = os.path.join(DATA_FOLDER, "reg.csv")
 
 
 # ============================================
@@ -124,7 +125,7 @@ def download_csv():
 
     return send_file(
         CSV_FILE,
-        download_name="reg_data.csv",
+        download_name="reg.csv",
         as_attachment=True
     )
 
@@ -150,7 +151,7 @@ def view_data():
 quiz_questions = [
     {
         "question": "What does PLC stand for?",
-        "options": ["Programmable Logic Controller", "Power Line Communication", 
+        "options": ["Programmable Logic Controller", "Power Line Communication",
                     "Programmable Linear Control", "Process Logic Control"],
         "answer": "Programmable Logic Controller"
     },
@@ -161,7 +162,7 @@ quiz_questions = [
     },
     {
         "question": "What is the full scan cycle of a PLC?",
-        "options": ["Input -> Execute Program -> Output", "Output -> Input -> Execute", 
+        "options": ["Input -> Execute Program -> Output", "Output -> Input -> Execute",
                     "Scan -> Sleep -> Write", "Input -> Output -> Execute"],
         "answer": "Input -> Execute Program -> Output"
     },
@@ -172,7 +173,7 @@ quiz_questions = [
     },
     {
         "question": "What is a rung in Ladder Logic?",
-        "options": ["A voltage level", "A row of logic instructions", 
+        "options": ["A voltage level", "A row of logic instructions",
                     "A programming error", "An analog signal"],
         "answer": "A row of logic instructions"
     }
