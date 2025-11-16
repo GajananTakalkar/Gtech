@@ -1,7 +1,6 @@
 from flask import Flask, render_template, request, send_file
 import pandas as pd
 import os
-import io
 
 app = Flask(__name__)
 
@@ -11,35 +10,32 @@ app = Flask(__name__)
 
 if os.environ.get("RENDER"):
     DATA_FOLDER = "/tmp/data"
-    os.makedirs(DATA_FOLDER, exist_ok=True)
-
-    # copy initial excel if exists in repo
-    if not os.path.exists(os.path.join(DATA_FOLDER, "registration_data.xlsx")):
-        if os.path.exists("data/registration_data.xlsx"):
-            os.system("cp data/registration_data.xlsx /tmp/data/registration_data.xlsx")
 else:
     DATA_FOLDER = "data"
-    os.makedirs(DATA_FOLDER, exist_ok=True)
 
-EXCEL_FILE = os.path.join(DATA_FOLDER, "registration_data.xlsx")
+os.makedirs(DATA_FOLDER, exist_ok=True)
+
+CSV_FILE = os.path.join(DATA_FOLDER, "registration_data.csv")
 
 
 # ==========================
-# SAFE READ / SAVE
+# SAFE READ / SAVE CSV
 # ==========================
 
-def read_excel_safe(path):
+def read_csv_safe(path):
+    if not os.path.exists(path):
+        return pd.DataFrame(columns=["Name", "Email", "Course"])
     try:
-        return pd.read_excel(path)
+        return pd.read_csv(path)
     except:
         return pd.DataFrame(columns=["Name", "Email", "Course"])
 
 
-def save_excel(df, path):
+def save_csv(df, path):
     try:
-        df.to_excel(path, index=False)
+        df.to_csv(path, index=False)
     except Exception as e:
-        print("Excel Write Error:", e)
+        print("CSV Write Error:", e)
 
 
 # ==========================
@@ -84,7 +80,7 @@ def register():
         email = request.form["email"]
         course = request.form["course"]
 
-        df_old = read_excel_safe(EXCEL_FILE)
+        df_old = read_csv_safe(CSV_FILE)
 
         new_row = pd.DataFrame([{
             "Name": name,
@@ -93,7 +89,7 @@ def register():
         }])
 
         df_all = pd.concat([df_old, new_row], ignore_index=True)
-        save_excel(df_all, EXCEL_FILE)
+        save_csv(df_all, CSV_FILE)
 
         return f"<h2>Thank you, {name}! Your registration for {course} has been saved.</h2>"
 
@@ -101,17 +97,17 @@ def register():
 
 
 # ==========================
-# DOWNLOAD REGISTRATION FILE
+# DOWNLOAD REGISTRATION CSV
 # ==========================
 
-@app.route('/download-excel')
-def download_excel():
-    if not os.path.exists(EXCEL_FILE):
-        return "<h3>No data file found.</h3>"
+@app.route('/download-csv')
+def download_csv():
+    if not os.path.exists(CSV_FILE):
+        return "<h3>No registration data found.</h3>"
 
     return send_file(
-        EXCEL_FILE,
-        download_name="registration_data.xlsx",
+        CSV_FILE,
+        download_name="registration_data.csv",
         as_attachment=True
     )
 
@@ -122,10 +118,10 @@ def download_excel():
 
 @app.route('/view-data')
 def view_data():
-    df = read_excel_safe(EXCEL_FILE)
+    df = read_csv_safe(CSV_FILE)
     if df.empty:
         return "<h3>No registration data found.</h3>"
-    return df.to_html()
+    return df.to_html(classes="table table-bordered")
 
 
 # ==========================
