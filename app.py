@@ -1,11 +1,46 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, send_file
 import pandas as pd
 import os
+import io
 
 app = Flask(__name__)
 
-# Writable Excel file path (Render allows writing inside project folders)
-EXCEL_FILE = os.path.join("data", "registration_data.xlsx")
+# ==========================
+# RENDER-SAFE STORAGE
+# ==========================
+
+if os.environ.get("RENDER"):
+    DATA_FOLDER = "/tmp/data"
+    os.makedirs(DATA_FOLDER, exist_ok=True)
+
+    # copy initial excel if exists in repo
+    if not os.path.exists(os.path.join(DATA_FOLDER, "registration_data.xlsx")):
+        if os.path.exists("data/registration_data.xlsx"):
+            os.system("cp data/registration_data.xlsx /tmp/data/registration_data.xlsx")
+else:
+    DATA_FOLDER = "data"
+    os.makedirs(DATA_FOLDER, exist_ok=True)
+
+EXCEL_FILE = os.path.join(DATA_FOLDER, "registration_data.xlsx")
+
+
+# ==========================
+# SAFE READ / SAVE
+# ==========================
+
+def read_excel_safe(path):
+    try:
+        return pd.read_excel(path)
+    except:
+        return pd.DataFrame(columns=["Name", "Email", "Course"])
+
+
+def save_excel(df, path):
+    try:
+        df.to_excel(path, index=False)
+    except Exception as e:
+        print("Excel Write Error:", e)
+
 
 # ==========================
 # ROUTES
@@ -21,55 +56,77 @@ def about():
 
 @app.route('/plc_scada')
 def plc_scada():
-    return render_template('plc_scada.html')
+    return render_template("plc_scada.html")
 
 @app.route('/hmi_vfd')
 def hmi_vfd():
-    return render_template('hmi_vfd.html')
+    return render_template("hmi_vfd.html")
 
 @app.route('/training')
 def training():
-    return render_template('training.html')
+    return render_template("training.html")
 
 @app.route('/course')
 def course():
-    return render_template('course.html')
+    return render_template("course.html")
+
 
 # ==========================
-# REGISTRATION + EXCEL SAVE
+# REGISTRATION
 # ==========================
 
 @app.route('/register', methods=["GET", "POST"])
 def register():
     courses = ["PLC Basics", "SCADA", "HMI", "Python"]
 
-    # Ensure data folder exists
-    if not os.path.exists("data"):
-        os.makedirs("data")
-
     if request.method == "POST":
         name = request.form["name"]
         email = request.form["email"]
         course = request.form["course"]
 
-        new_data = {
+        df_old = read_excel_safe(EXCEL_FILE)
+
+        new_row = pd.DataFrame([{
             "Name": name,
             "Email": email,
             "Course": course
-        }
+        }])
 
-        # Save to Excel
-        if os.path.exists(EXCEL_FILE):
-            df = pd.read_excel(EXCEL_FILE)
-            df = pd.concat([df, pd.DataFrame([new_data])], ignore_index=True)
-        else:
-            df = pd.DataFrame([new_data])
+        df_all = pd.concat([df_old, new_row], ignore_index=True)
+        save_excel(df_all, EXCEL_FILE)
 
-        df.to_excel(EXCEL_FILE, index=False)
-
-        return f"<h2>Thank you, {name}! Your registration for {course} is saved.</h2>"
+        return f"<h2>Thank you, {name}! Your registration for {course} has been saved.</h2>"
 
     return render_template("register.html", courses=courses)
+
+
+# ==========================
+# DOWNLOAD REGISTRATION FILE
+# ==========================
+
+@app.route('/download-excel')
+def download_excel():
+    if not os.path.exists(EXCEL_FILE):
+        return "<h3>No data file found.</h3>"
+
+    return send_file(
+        EXCEL_FILE,
+        download_name="registration_data.xlsx",
+        as_attachment=True
+    )
+
+
+# ==========================
+# VIEW REGISTRATION DATA
+# ==========================
+
+@app.route('/view-data')
+def view_data():
+    df = read_excel_safe(EXCEL_FILE)
+    if df.empty:
+        return "<h3>No registration data found.</h3>"
+    return df.to_html()
+
 
 # ==========================
 # PLC QUIZ
@@ -107,6 +164,7 @@ quiz_questions = [
 def plc_quiz():
     return render_template('quiz.html', questions=quiz_questions)
 
+
 @app.route('/plc-quiz/submit', methods=['POST'])
 def plc_submit():
     score = 0
@@ -116,9 +174,10 @@ def plc_submit():
             score += 1
     return render_template('result.html', score=score, total=len(quiz_questions))
 
+
 # ==========================
 # RUN
 # ==========================
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True)
