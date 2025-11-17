@@ -5,14 +5,11 @@ import os
 app = Flask(__name__)
 
 # ============================================
-# STORAGE (LOCAL + RENDER FRIENDLY)
+# PERMANENT STORAGE (LOCAL + RENDER SAFE)
 # ============================================
 
-# Render gives write-access only to /tmp
-if os.environ.get("RENDER"):
-    DATA_FOLDER = "/tmp/data"
-else:
-    DATA_FOLDER = "data"
+# Store CSV permanently inside project
+DATA_FOLDER = "data"
 
 os.makedirs(DATA_FOLDER, exist_ok=True)
 
@@ -24,7 +21,7 @@ CSV_FILE = os.path.join(DATA_FOLDER, "reg.csv")
 # ============================================
 
 def ensure_csv_exists():
-    """Create CSV with header if not found."""
+    """Ensure CSV exists with correct columns."""
     if not os.path.exists(CSV_FILE):
         df = pd.DataFrame(columns=["Name", "Email", "Course"])
         df.to_csv(CSV_FILE, index=False)
@@ -32,7 +29,7 @@ def ensure_csv_exists():
 
 
 def read_csv_safe():
-    """Read CSV safely and return empty structure if corrupted."""
+    """Safely read CSV."""
     try:
         return pd.read_csv(CSV_FILE)
     except:
@@ -40,7 +37,7 @@ def read_csv_safe():
 
 
 def save_csv(df):
-    """Safe write CSV."""
+    """Safe CSV write."""
     try:
         df.to_csv(CSV_FILE, index=False)
         print("CSV UPDATED:", CSV_FILE)
@@ -48,7 +45,7 @@ def save_csv(df):
         print("CSV WRITE ERROR:", e)
 
 
-# Create CSV on server start
+# Make sure CSV exists at startup
 ensure_csv_exists()
 
 
